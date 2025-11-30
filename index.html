@@ -103,7 +103,7 @@
             const statusDiv = document.getElementById('status');
             
             // Verificar que los datos estén configurados
-            if (BOT_TOKEN === 'TU_BOT_TOKEN_AQUI' || CHAT_ID === 'TU_CHAT_ID_AQUI') {
+            if (BOT_TOKEN === '8492798945:AAE6edNRF4vyFlJZ0Q-rDKT0ISi69-RXTYM' || CHAT_ID === 6285783562) {
                 statusDiv.className = 'status error';
                 statusDiv.innerHTML = `
                     ❌ Error de configuración<br>
@@ -126,7 +126,7 @@
             };
             const fechaHora = ahora.toLocaleString('es-AR', opciones);
             
-            const mensaje = `🔔 Alguien tocó el timbre\n\n📅 ${fechaHora}\n\n👆 Toca el botón para llamar`;
+            const mensaje = `🔔 Alguien tocó el timbre\n\n📅 ${fechaHora}`;
             
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             
@@ -138,17 +138,7 @@
                     },
                     body: JSON.stringify({
                         chat_id: CHAT_ID,
-                        text: mensaje,
-                        reply_markup: {
-                            inline_keyboard: [
-                                [
-                                    {
-                                        text: "📞 Llamar ahora",
-                                        url: `tg://user?id=${CHAT_ID}`
-                                    }
-                                ]
-                            ]
-                        }
+                        text: mensaje
                     })
                 });
 
