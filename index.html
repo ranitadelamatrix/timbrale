@@ -22,6 +22,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 400px;
+            width: 90%;
         }
         .icon {
             font-size: 80px;
@@ -61,6 +62,27 @@
             background: #fff3cd;
             color: #856404;
         }
+        .error-details {
+            font-size: 12px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            text-align: left;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
     </style>
 </head>
 <body>
@@ -73,11 +95,11 @@
 
     <script>
         // CONFIGURA AQUÍ TUS DATOS
-        const BOT_TOKEN = '8492798945:AAE6edNRF4vyFlJZ0Q-rDKT0ISi69-RXTYM';  // Reemplaza con tu token del bot
-        const CHAT_ID = [
-    6285783562,           // Tu Chat ID
-    8500087943            // Chat ID de la segunda persona
-];       // Reemplaza con tu chat ID
+        const BOT_TOKEN = '8492798945:AAE6edNRF4vyFlJZ0Q-rDKT0ISi69-RXTYM';
+        const CHAT_IDS = [
+            6285783562,      // Persona 1
+            8500087943       // Persona 2
+        ];
 
         async function enviarNotificacion() {
             const statusDiv = document.getElementById('status');
@@ -96,35 +118,68 @@
             };
             const fechaHora = ahora.toLocaleString('es-AR', opciones);
             
-            const mensaje = `🔔 *Alguien tocó el timbre*\n\n📅 Fecha y hora: ${fechaHora}`;
+            const mensaje = `🔔 *Alguien tocó el timbre*\n\n📅 Fecha y hora: ${fechaHora}\n\n👆 Toca el botón para llamar`;
             
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        chat_id: CHAT_ID,
-                        text: mensaje,
-                        parse_mode: 'Markdown'
-                    })
-                });
-
-                const data = await response.json();
+            let todosEnviados = true;
+            let errores = [];
+            
+            // Enviar a cada persona en la lista
+            for (let i = 0; i < CHAT_IDS.length; i++) {
+                const chatId = CHAT_IDS[i];
                 
-                if (data.ok) {
-                    statusDiv.className = 'status success';
-                    statusDiv.innerHTML = '✅ Notificación enviada con éxito<br><small>El propietario ha sido informado</small>';
-                } else {
-                    throw new Error('Error en la respuesta de Telegram');
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: mensaje,
+                            parse_mode: 'Markdown',
+                            reply_markup: {
+                                inline_keyboard: [
+                                    [
+                                        {
+                                            text: "📞 Llamar ahora",
+                                            url: `tg://user?id=${chatId}`
+                                        }
+                                    ]
+                                ]
+                            }
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    console.log(`Respuesta para usuario ${i + 1}:`, data);
+                    
+                    if (!data.ok) {
+                        todosEnviados = false;
+                        errores.push(`Usuario ${i + 1}: ${data.description}`);
+                    }
+                } catch (error) {
+                    todosEnviados = false;
+                    errores.push(`Usuario ${i + 1}: ${error.message}`);
+                    console.error(`Error al enviar a usuario ${i + 1}:`, error);
                 }
-            } catch (error) {
+            }
+            
+            // Mostrar resultado
+            if (todosEnviados) {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `✅ Notificación enviada con éxito<br><small>Se notificó a ${CHAT_IDS.length} persona(s)</small>`;
+            } else {
                 statusDiv.className = 'status error';
-                statusDiv.innerHTML = '❌ Error al enviar notificación<br><small>Por favor, intenta nuevamente</small>';
-                console.error('Error:', error);
+                statusDiv.innerHTML = `
+                    ⚠️ Algunas notificaciones fallaron<br>
+                    <div class="error-details">
+                        ${errores.join('<br>')}
+                    </div>
+                    <button onclick="enviarNotificacion()">Reintentar</button>
+                `;
             }
         }
 
