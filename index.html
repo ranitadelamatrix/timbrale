@@ -22,7 +22,6 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 400px;
-            width: 90%;
         }
         .icon {
             font-size: 80px;
@@ -62,28 +61,6 @@
             background: #fff3cd;
             color: #856404;
         }
-        .error-details {
-            font-size: 12px;
-            margin-top: 10px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 5px;
-            text-align: left;
-            word-break: break-all;
-        }
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        button:hover {
-            background: #5568d3;
-        }
     </style>
 </head>
 <body>
@@ -102,16 +79,6 @@
         async function enviarNotificacion() {
             const statusDiv = document.getElementById('status');
             
-            // Verificar que los datos estén configurados
-            if (BOT_TOKEN === '8492798945:AAE6edNRF4vyFlJZ0Q-rDKT0ISi69-RXTYM' || CHAT_ID === 6285783562) {
-                statusDiv.className = 'status error';
-                statusDiv.innerHTML = `
-                    ❌ Error de configuración<br>
-                    <small>Debes reemplazar BOT_TOKEN y CHAT_ID en el código</small>
-                `;
-                return;
-            }
-            
             // Obtener fecha y hora actual de Argentina
             const ahora = new Date();
             const opciones = {
@@ -126,7 +93,7 @@
             };
             const fechaHora = ahora.toLocaleString('es-AR', opciones);
             
-            const mensaje = `🔔 Alguien tocó el timbre\n\n📅 ${fechaHora}`;
+            const mensaje = `🔔 *Alguien tocó el timbre*\n\n📅 Fecha y hora: ${fechaHora}`;
             
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             
@@ -138,42 +105,23 @@
                     },
                     body: JSON.stringify({
                         chat_id: CHAT_ID,
-                        text: mensaje
+                        text: mensaje,
+                        parse_mode: 'Markdown'
                     })
                 });
 
                 const data = await response.json();
                 
-                console.log('Respuesta de Telegram:', data);
-                
                 if (data.ok) {
                     statusDiv.className = 'status success';
                     statusDiv.innerHTML = '✅ Notificación enviada con éxito<br><small>El propietario ha sido informado</small>';
                 } else {
-                    // Error específico de Telegram
-                    statusDiv.className = 'status error';
-                    statusDiv.innerHTML = `
-                        ❌ Error de Telegram<br>
-                        <small>${data.description || 'Error desconocido'}</small>
-                        <div class="error-details">
-                            <strong>Código:</strong> ${data.error_code}<br>
-                            <strong>Descripción:</strong> ${data.description}
-                        </div>
-                        <button onclick="enviarNotificacion()">Reintentar</button>
-                    `;
+                    throw new Error('Error en la respuesta de Telegram');
                 }
             } catch (error) {
-                // Error de red o conexión
                 statusDiv.className = 'status error';
-                statusDiv.innerHTML = `
-                    ❌ Error de conexión<br>
-                    <small>No se pudo conectar con Telegram</small>
-                    <div class="error-details">
-                        ${error.message}
-                    </div>
-                    <button onclick="enviarNotificacion()">Reintentar</button>
-                `;
-                console.error('Error completo:', error);
+                statusDiv.innerHTML = '❌ Error al enviar notificación<br><small>Por favor, intenta nuevamente</small>';
+                console.error('Error:', error);
             }
         }
 
