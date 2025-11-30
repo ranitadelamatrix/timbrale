@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timbre</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: ring 1s ease-in-out;
+        }
+        @keyframes ring {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+            20%, 40%, 60%, 80% { transform: rotate(10deg); }
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .error-details {
+            font-size: 12px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            text-align: left;
+            word-break: break-all;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔔</div>
+        <h1>Timbre Virtual</h1>
+        <p>Notificando al propietario...</p>
+        <div id="status" class="status loading">Enviando notificación...</div>
+    </div>
+
+    <script>
+        // CONFIGURA AQUÍ TUS DATOS
+        const BOT_TOKEN = '8492798945:AAE6edNRF4vyFlJZ0Q-rDKT0ISi69-RXTYM';  // Reemplaza con tu token del bot
+        const CHAT_IDS = [
+            6285783562,           // Tu Chat ID
+            8500087943    // Chat ID de la segunda persona
+        ];
+
+        async function enviarNotificacion() {
+            const statusDiv = document.getElementById('status');
+            
+            // Verificar que los datos estén configurados
+            if (BOT_TOKEN === 'TU_BOT_TOKEN_AQUI' || CHAT_ID === 'TU_CHAT_ID_AQUI') {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    ❌ Error de configuración<br>
+                    <small>Debes reemplazar BOT_TOKEN y CHAT_ID en el código</small>
+                `;
+                return;
+            }
+            
+            // Obtener fecha y hora actual de Argentina
+            const ahora = new Date();
+            const opciones = {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const fechaHora = ahora.toLocaleString('es-AR', opciones);
+            
+            const mensaje = `🔔 Alguien tocó el timbre\n\n📅 ${fechaHora}\n\n👆 Toca el botón para llamar`;
+            
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: mensaje,
+                        reply_markup: {
+                            inline_keyboard: [
+                                [
+                                    {
+                                        text: "📞 Llamar ahora",
+                                        url: `tg://user?id=${CHAT_ID}`
+                                    }
+                                ]
+                            ]
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                console.log('Respuesta de Telegram:', data);
+                
+                if (data.ok) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ Notificación enviada con éxito<br><small>El propietario ha sido informado</small>';
+                } else {
+                    // Error específico de Telegram
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = `
+                        ❌ Error de Telegram<br>
+                        <small>${data.description || 'Error desconocido'}</small>
+                        <div class="error-details">
+                            <strong>Código:</strong> ${data.error_code}<br>
+                            <strong>Descripción:</strong> ${data.description}
+                        </div>
+                        <button onclick="enviarNotificacion()">Reintentar</button>
+                    `;
+                }
+            } catch (error) {
+                // Error de red o conexión
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    ❌ Error de conexión<br>
+                    <small>No se pudo conectar con Telegram</small>
+                    <div class="error-details">
+                        ${error.message}
+                    </div>
+                    <button onclick="enviarNotificacion()">Reintentar</button>
+                `;
+                console.error('Error completo:', error);
+            }
+        }
+
+        // Enviar notificación automáticamente al cargar la página
+        window.onload = enviarNotificacion;
+    </script>
+</body>
+</html>
