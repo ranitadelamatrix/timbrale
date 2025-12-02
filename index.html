@@ -49,6 +49,10 @@
             padding: 15px;
             border-radius: 10px;
             font-weight: 500;
+            display: none;
+        }
+        .status.show {
+            display: block;
         }
         .success {
             background: #d4edda;
@@ -83,14 +87,62 @@
         button:hover {
             background: #5568d3;
         }
+        .hidden {
+            display: none;
+        }
+        .form-container {
+            margin: 20px 0;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .send-button {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        .send-button:hover {
+            background: #5568d3;
+        }
+        .send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="icon">🔔</div>
         <h1>Timbre Virtual</h1>
-        <p>Notificando al propietario...</p>
-        <div id="status" class="status loading">Enviando notificación...</div>
+        
+        <div id="form-view" class="form-container">
+            <p>¿Deseas dejar un mensaje?</p>
+            <textarea id="mensaje" placeholder="Escribe un mensaje opcional aquí..."></textarea>
+            <button class="send-button" onclick="enviarNotificacion()">🔔 Tocar Timbre</button>
+        </div>
+        
+        <div id="status" class="status"></div>
     </div>
 
     <script>
@@ -101,8 +153,93 @@
             8500087943       // Persona 2
         ];
 
+        function detectarDispositivo() {
+            const ua = navigator.userAgent;
+            let dispositivo = '🖥️ Desconocido';
+            
+            // Detectar tipo de dispositivo
+            if (/mobile/i.test(ua)) {
+                if (/iPad/i.test(ua)) {
+                    dispositivo = '📱 iPad';
+                } else if (/iPhone/i.test(ua)) {
+                    dispositivo = '📱 iPhone';
+                } else if (/Android/i.test(ua)) {
+                    dispositivo = '📱 Android';
+                } else {
+                    dispositivo = '📱 Móvil';
+                }
+            } else if (/tablet/i.test(ua)) {
+                dispositivo = '📱 Tablet';
+            } else {
+                dispositivo = '💻 Computadora';
+            }
+            
+            return dispositivo;
+        }
+
+        function detectarNavegador() {
+            const ua = navigator.userAgent;
+            let navegador = 'Desconocido';
+            
+            if (/Firefox/i.test(ua)) {
+                navegador = '🦊 Firefox';
+            } else if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) {
+                navegador = '🌐 Chrome';
+            } else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+                navegador = '🧭 Safari';
+            } else if (/Edg/i.test(ua)) {
+                navegador = '🌊 Edge';
+            } else if (/Opera|OPR/i.test(ua)) {
+                navegador = '🎭 Opera';
+            } else if (/MSIE|Trident/i.test(ua)) {
+                navegador = '📘 Internet Explorer';
+            } else {
+                navegador = '🌐 Navegador desconocido';
+            }
+            
+            return navegador;
+        }
+
+        function detectarSistemaOperativo() {
+            const ua = navigator.userAgent;
+            let so = 'Desconocido';
+            
+            if (/Windows NT 10/i.test(ua)) {
+                so = '🪟 Windows 10/11';
+            } else if (/Windows/i.test(ua)) {
+                so = '🪟 Windows';
+            } else if (/Mac OS X/i.test(ua)) {
+                so = '🍎 macOS';
+            } else if (/iPhone|iPad|iPod/i.test(ua)) {
+                so = '🍎 iOS';
+            } else if (/Android/i.test(ua)) {
+                const match = ua.match(/Android ([0-9.]+)/);
+                so = match ? `🤖 Android ${match[1]}` : '🤖 Android';
+            } else if (/Linux/i.test(ua)) {
+                so = '🐧 Linux';
+            }
+            
+            return so;
+        }
+
         async function enviarNotificacion() {
             const statusDiv = document.getElementById('status');
+            const formView = document.getElementById('form-view');
+            const mensajeInput = document.getElementById('mensaje');
+            const sendButton = document.querySelector('.send-button');
+            
+            // Deshabilitar botón
+            sendButton.disabled = true;
+            sendButton.textContent = "Enviando...";
+            
+            // Mostrar status de carga
+            statusDiv.className = 'status loading show';
+            statusDiv.innerHTML = '⏳ Enviando notificación...';
+            
+            // Detectar información del dispositivo
+            const dispositivo = detectarDispositivo();
+            const navegador = detectarNavegador();
+            const sistemaOperativo = detectarSistemaOperativo();
             
             // Obtener fecha y hora actual de Argentina
             const ahora = new Date();
@@ -118,7 +255,20 @@
             };
             const fechaHora = ahora.toLocaleString('es-AR', opciones);
             
-            const mensaje = `🔔 *Alguien tocó el timbre*\n\n📅 Fecha y hora: ${fechaHora}\n\n👆 Toca el botón para llamar`;
+            // Construir mensaje con información del dispositivo
+            let mensaje = `🔔 *Alguien tocó el timbre*\n\n`;
+            mensaje += `📅 Fecha y hora: ${fechaHora}\n\n`;
+            
+            // Agregar mensaje del visitante si existe
+            const mensajeVisitante = mensajeInput.value.trim();
+            if (mensajeVisitante) {
+                mensaje += `💬 *Mensaje:*\n"${mensajeVisitante}"\n\n`;
+            }
+            
+            mensaje += `📊 *Información del dispositivo:*\n`;
+            mensaje += `${dispositivo}\n`;
+            mensaje += `${navegador}\n`;
+            mensaje += `${sistemaOperativo}`;
             
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             
@@ -138,17 +288,7 @@
                         body: JSON.stringify({
                             chat_id: chatId,
                             text: mensaje,
-                            parse_mode: 'Markdown',
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [
-                                        {
-                                            text: "📞 Llamar ahora",
-                                            url: `tg://user?id=${chatId}`
-                                        }
-                                    ]
-                                ]
-                            }
+                            parse_mode: 'Markdown'
                         })
                     });
 
@@ -169,22 +309,23 @@
             
             // Mostrar resultado
             if (todosEnviados) {
-                statusDiv.className = 'status success';
+                formView.classList.add('hidden');
+                statusDiv.className = 'status success show';
                 statusDiv.innerHTML = `✅ Notificación enviada con éxito<br><small>Se notificó a ${CHAT_IDS.length} persona(s)</small>`;
             } else {
-                statusDiv.className = 'status error';
+                statusDiv.className = 'status error show';
                 statusDiv.innerHTML = `
                     ⚠️ Algunas notificaciones fallaron<br>
                     <div class="error-details">
                         ${errores.join('<br>')}
                     </div>
-                    <button onclick="enviarNotificacion()">Reintentar</button>
                 `;
+                sendButton.disabled = false;
+                sendButton.textContent = "🔔 Reintentar";
             }
         }
 
-        // Enviar notificación automáticamente al cargar la página
-        window.onload = enviarNotificacion;
+        // No ejecutar automáticamente, esperar a que el usuario toque el botón
     </script>
 </body>
 </html>
